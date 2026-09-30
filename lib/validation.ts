@@ -21,6 +21,16 @@ export const createWeddingSchema = z.object({
 export const orderSchema = z.object({
   wedding_id: z.string().uuid("wedding_id tidak valid"),
   plan_id: z.string().min(1).max(40),
+  /**
+   * Kode channel Duitku (2 huruf, mis. "BC"). Wajib karena project tidak
+   * mengaktifkan "*" — divalidasi lagi di server terhadap daftar channel aktif
+   * dari Duitku, jadi nilai dari client tidak pernah dipercaya langsung.
+   */
+  payment_method: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z0-9]{1,2}$/, "payment_method tidak valid"),
 });
 
 export const saveDraftSchema = z.object({

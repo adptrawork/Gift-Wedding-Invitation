@@ -72,10 +72,25 @@ cloudflared tunnel --url https://gift-wedding.ddev.site:3001
 # lalu set NEXT_PUBLIC_BASE_URL ke URL tunnel tersebut dan restart dev server
 ```
 
-Arahkan `paymentMethod` (`*`) ke halaman Choosing Payment Duitku. Kalau project
-merchant Anda menolak `*`, isi kode channel konkret — contoh `BC` (BCA VA),
-`SP` (ShopeePay QRIS), `M2` (Mandiri VA), `DA` (DANA). Daftar lengkap ada di
-<https://docs.duitku.com/api/en#payment-method>.
+### Penting: project Anda tidak punya channel `*`
+
+Duitku menerima `paymentMethod` bertipe `string(2)`, dan tabel metode resmi
+**tidak memuat `*`** (pilihan semua channel di halaman bayar Duitku). Cek
+sendiri daftar channel yang aktif di project Anda:
+
+```bash
+ddev npm run check:duitku
+```
+
+Endpoint `/api/payments/channels` mengambil daftar ini dari Duitku, jadi form
+di `/dashboard/billing` menampilkan pilihan metode yang benar-benar aktif —
+BCA VA, BRI VA, Mandiri VA, QRIS ShopeePay, DANA, OVO, ritel, dan seterusnya
+sesuai apa yang Anda aktifkan di dashboard Duitku.
+
+Konsekuensinya: `POST /api/orders` mewajibkan `payment_method`, dan nilainya
+divalidasi ulang di server terhadap daftar aktif — kode dari client tidak
+dipercaya langsung. `DUITKU_PAYMENT_METHOD` hanya jadi nilai cadangan untuk
+server ke server.
 
 Status order hanya berubah lewat callback. Kalau order masih `pending`, pakai
 tombol **Cek status** di `/dashboard/billing` (panggil manual, jangan cron —
@@ -87,6 +102,7 @@ Duitku membatasi rate limit API `transactionStatus`).
 ddev npm run typecheck
 ddev npm run lint
 ddev npm run build
+ddev npm run check:duitku    # diagnosa kredensial Duitku, tanpa membuat transaksi
 ```
 
 Buka `/demo-luxury-gold` — undangan harus render dengan animasi GSAP.

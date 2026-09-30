@@ -24,6 +24,14 @@ Xendit dihapus, tidak ada sisa jalur yang bisa menerima order ke sana.
   memperingatkan rate limit `transactionStatus` memblokir IP ±1 jam.
 - `resultCode` pada redirect tidak lagi dipakai menandai sukses; dokumentasi
   Duitku menyatakan URL redirect bisa diubah manual oleh customer.
+- **Channel pembayaran jadi pilihan user, bukan hardcoded `*`.** Ternyata
+  project Duitku tidak mengaktifkan `*` (dokumentasi resmi hanya memuat kode 2
+  karakter, `*` tidak termasuk). `GET /api/payments/channels` mengambil
+  daftar channel aktif dari Duitku (di-cache 1 jam) dan `/dashboard/billing`
+  menampilkannya sebagai dropdown. `POST /api/orders` mewajibkan
+  `payment_method` dan memvalidasinya terhadap daftar aktif di server.
+  Verifikasi `ddev npm run check:duitku` untuk diagnosa Merchant Code dan
+  environment tanpa membuat transaksi apa pun.
 - Env: `DUITKU_MERCHANT_CODE`, `DUITKU_API_KEY`, `DUITKU_IS_PRODUCTION`,
   `DUITKU_PAYMENT_METHOD` (default `*`), `DUITKU_EXPIRY_MINUTES`.
 - Migrasi baru `20260930000003_duitku.sql` mempersempit

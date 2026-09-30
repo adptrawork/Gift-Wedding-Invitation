@@ -51,6 +51,9 @@ Provider tunggal: **Duitku**. Ringkasnya:
 - Autentikasi webhook **wajib** lewat HMAC-SHA256 dengan formula
   `merchantCode + amount + merchantOrderId`. Nilai `amount` dipakai apa adanya
   dari body, tidak diparse lebih dulu.
+- Metode pembayaran diambil dari daftar channel yang aktif di project Duitku
+  (`GET /api/payments/channels`), bukan hardcoded. Cek konfigurasi dengan
+  `ddev npm run check:duitku`.
 - Status order hanya berubah dari callback. `resultCode` pada redirect **tidak
   dipercaya** — dokumentasi Duitku menyatakan URL redirect bisa diubah manual
   oleh customer.

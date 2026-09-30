@@ -21,6 +21,12 @@ interface Order {
   weddings: { slug: string; title: string } | null;
 }
 
+interface Channel {
+  code: string;
+  name: string;
+  fee: string;
+}
+
 export default function BillingClient() {
   const params = useSearchParams();
   const [weddings, setWeddings] = useState<Wedding[]>([]);
@@ -29,6 +35,8 @@ export default function BillingClient() {
   const [busy, setBusy] = useState<string | null>(null);
   const [verifying, setVerifying] = useState<string | null>(null);
   const [msg, setMsg] = useState("");
+  const [channels, setChannels] = useState<Channel[]>([]);
+  const [channel, setChannel] = useState("");
 
   // Duitku mengarahkan balik ke sini dengan ?from=duitku. Status TIDAK boleh
   // diambil dari redirect — dokumentasi Duitku menyatakan resultCode bisa
@@ -36,16 +44,24 @@ export default function BillingClient() {
   const returnedFromGateway = params.get("from") === "duitku";
 
   const load = useCallback(async () => {
-    const [w, o] = await Promise.all([
+    const [w, o, c] = await Promise.all([
       fetch("/api/weddings")
         .then((r) => r.json())
         .catch(() => ({ data: [] })),
       fetch("/api/orders")
         .then((r) => r.json())
         .catch(() => ({ data: [] })),
+      // Channel boleh gagal (mis. Duitku belum dikonfigurasi) — halaman
+      // billing tetap harus usable untuk melihat riwayat order.
+      fetch("/api/payments/channels")
+        .then((r) => r.json())
+        .catch(() => ({ data: [] })),
     ]);
     setWeddings((w.data ?? []) as Wedding[]);
     setOrders((o.data ?? []) as Order[]);
+    const list = (c.data ?? []) as Channel[];
+    setChannels(list);
+    setChannel((prev) => (prev && list.some((x) => x.code === prev) ? prev : (list[0]?.code ?? "")));
   }, []);
 
   useEffect(() => {
@@ -85,6 +101,10 @@ export default function BillingClient() {
       setMsg("Pilih undangan dulu.");
       return;
     }
+    if (!channel) {
+      setMsg("Pilih metode pembayaran dulu.");
+      return;
+    }
     setBusy(planId);
     setMsg("");
 
@@ -92,8 +112,13 @@ export default function BillingClient() {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // Kirim plan_id saja — harga ditentukan server dari katalog.
-        body: JSON.stringify({ wedding_id: weddingId, plan_id: planId }),
+        // Kirim plan_id + kode channel saja. Harga ditentukan server dari
+        // katalog, dan kode channel divalidasi ulang di server.
+        body: JSON.stringify({
+          wedding_id: weddingId,
+          plan_id: planId,
+          payment_method: channel,
+        }),
       });
       const json = (await res.json()) as { redirect_url?: string; error?: unknown };
 
@@ -156,6 +181,33 @@ export default function BillingClient() {
         ) : null}
       </div>
 
+      <div className="mt-4 grid gap-2">
+        <label className="text-sm font-medium" htmlFor="channel">
+          Metode pembayaran
+        </label>
+        <select
+          id="channel"
+          className="max-w-md rounded-lg border bg-white px-3 py-2"
+          value={channel}
+          onChange={(e) => setChannel(e.target.value)}
+          disabled={channels.length === 0}
+        >
+          {channels.length === 0 ? (
+            <option value="">— memuat metode pembayaran… —</option>
+          ) : (
+            channels.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.name}
+              </option>
+            ))
+          )}
+        </select>
+        <p className="text-sm opacity-60">
+          Metode yang ditampilkan mengikuti channel yang aktif di project Duitku
+          Anda.
+        </p>
+      </div>
+
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         {PLANS.map((p) => (
           <div key={p.id} className="flex flex-col rounded-2xl border p-6">
@@ -170,7 +222,7 @@ export default function BillingClient() {
             <button
               type="button"
               onClick={() => checkout(p.id)}
-              disabled={busy === p.id || !weddingId}
+              disabled={busy === p.id || !weddingId || !channel}
               className="mt-4 w-fit rounded-lg bg-black px-4 py-2 text-sm text-white disabled:opacity-40"
             >
               {busy === p.id ? "Membuat order…" : "Bayar"}

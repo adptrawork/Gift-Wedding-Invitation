@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { orderSchema } from "@/lib/validation";
 import { getPlan } from "@/lib/plans";
-import { createInquiry, readDuitkuConfig } from "@/lib/payments/duitku";
+import {
+  createInquiry,
+  listPaymentMethods,
+  readDuitkuConfig,
+  type PaymentChannel,
+} from "@/lib/payments/duitku";
 
 /** GET /api/orders — riwayat order milik caller. */
 export async function GET() {
@@ -72,6 +77,26 @@ export async function POST(req: Request) {
     );
   }
 
+  // Kode channel dari client TIDAK dipercaya langsung — dicocokkan dengan
+  // daftar channel yang benar-benar aktif di project Duitku.
+  const requested = parsed.data.payment_method;
+  let channels: PaymentChannel[];
+  try {
+    channels = await listPaymentMethods(duitku);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Gagal mengambil channel";
+    console.error("[orders] daftar channel gagal:", message);
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
+
+  const channel = channels.find((c) => c.code === requested);
+  if (!channel) {
+    return NextResponse.json(
+      { error: `Metode pembayaran "${requested}" tidak tersedia`, available: channels.map((c) => c.code) },
+      { status: 400 }
+    );
+  }
+
   // Order dibuat lebih dulu supaya ID-nya bisa jadi merchantOrderId di gateway.
   const { data: order, error: orderErr } = await supabase
     .from("orders")
@@ -106,6 +131,8 @@ export async function POST(req: Request) {
         productDetails: `Paket ${plan.name} — undangan digital (${wedding.slug})`,
         returnUrl: `${base}/dashboard/billing?from=duitku&order=${order.id}`,
         callbackUrl,
+        // Sudah tervalidasi terhadap daftar channel aktif.
+        paymentMethod: channel.code,
       },
       duitku
     );

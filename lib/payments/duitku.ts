@@ -179,6 +179,75 @@ function toRupiah(raw: string): number | null {
 
 // ==================== inquiry ====================
 
+// ==================== daftar channel ====================
+
+export interface PaymentChannel {
+  code: string;
+  name: string;
+  imageUrl: string | null;
+  fee: string;
+}
+
+interface PaymentMethodResponse {
+  paymentFee?: Array<{
+    paymentMethod?: string;
+    paymentName?: string;
+    paymentImage?: string;
+    totalFee?: string;
+  }>;
+  responseCode?: string;
+  responseMessage?: string;
+}
+
+/**
+ * Daftar channel pembayaran yang AKTIF pada project merchant.
+ *
+ * Penting: project Anda tidak mengaktifkan "*" (pilihan semua channel di
+ * halaman bayar Duitku). `paymentMethod` bertipe string(2) dan harus salah
+ * satu kode dari daftar ini — jadi user wajib memilih channel sebelum bayar.
+ *
+ * Formula signature endpoint ini berbeda dari inquiry:
+ *   stringToSign = merchantCode + paymentAmount + datetime
+ */
+export async function listPaymentMethods(config: DuitkuConfig): Promise<PaymentChannel[]> {
+  // Format WIB (UTC+7) eksplisit. Kalau container memakai UTC, tanpa ini
+  // datetime tertinggal 7 jam dan bisa ditolak sebagai kedaluwarsa.
+  const now = new Date(Date.now() + (7 * 60 + 0) * 60 * 1000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const datetime =
+    `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())} ` +
+    `${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}:${pad(now.getUTCSeconds())}`;
+
+  // Endpoint ini sengaja memakai nama field lowercase, berbeda dari inquiry.
+  const res = await fetch(`${duitkuBaseUrl(config)}/webapi/api/merchant/paymentmethod/getpaymentmethod`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({
+      merchantcode: config.merchantCode,
+      amount: DUITKU_MIN_AMOUNT,
+      datetime,
+      signature: hmacSha256Hex(`${config.merchantCode}${DUITKU_MIN_AMOUNT}${datetime}`, config.apiKey),
+    }),
+  });
+
+  const json = (await res.json().catch(() => null)) as PaymentMethodResponse | null;
+
+  if (!res.ok || json?.responseCode !== DUITKU_SUCCESS_CODE || !Array.isArray(json.paymentFee)) {
+    throw new Error(json?.responseMessage || `Duitku tidak menjawab (HTTP ${res.status})`);
+  }
+
+  return json.paymentFee
+    .filter((p) => typeof p.paymentMethod === "string" && p.paymentMethod.length > 0)
+    .map((p) => ({
+      code: String(p.paymentMethod),
+      name: String(p.paymentName ?? p.paymentMethod),
+      imageUrl: p.paymentImage ?? null,
+      fee: String(p.totalFee ?? "0"),
+    }));
+}
+
+// ==================== inquiry ====================
+
 export interface InquiryInput {
   /** `merchantOrderId` — maksimal 50 karakter dan wajib unik per transaksi. */
   orderId: string;
@@ -189,6 +258,12 @@ export interface InquiryInput {
   productDetails: string;
   returnUrl: string;
   callbackUrl: string;
+  /**
+   * Kode channel dari `listPaymentMethods`. WAJIB di isi pemanggil karena
+   * project tanpa "*" aktif — Duitku tidak menampilkan halaman Choosing
+   * Payment, jadi hanya satu channel per transaksi.
+   */
+  paymentMethod?: string;
 }
 
 export interface InquiryResult {
@@ -216,7 +291,7 @@ export async function createInquiry(
       merchantOrderId: input.orderId,
       productDetails: truncate(input.productDetails, 255),
       email: input.customerEmail,
-      paymentMethod: config.paymentMethod,
+      paymentMethod: input.paymentMethod ?? config.paymentMethod,
       // Maks 20 karakter; nama ini yang muncul di sisi bank.
       customerVaName: truncate(input.customerName, 20),
       returnUrl: input.returnUrl,
