@@ -1,5 +1,13 @@
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
+/* Catatan Tailwind:
+ *
+ * `@import "shadcn/tailwind.css"` dan `@import "tw-animate-css"` sengaja TIDAK
+ * dipakai. Keduanya ditulis untuk Tailwind v4 (at-rule `@theme inline` /
+ * `@custom-variant`), sedangkan proyek ini memakai Tailwind v3 — mengimpornya
+ * membuat PostCSS berhenti di `@apply border-border` karena utilitas itu tidak
+ * pernah tergenerate. Token warna sebagai gantinya didaftarkan di
+ * tailwind.config.ts memakai `var(--…)`, dan animasi shadcn tidak dipakai di
+ * MVP ini.
+ */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -97,7 +105,7 @@
     --sidebar-ring: oklch(0.556 0 0);
   }
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
   body {
     @apply bg-background text-foreground;

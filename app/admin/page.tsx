@@ -3,7 +3,12 @@ import { createClient } from "@/lib/supabase/server";
 
 async function table(name: "profiles" | "orders" | "weddings") {
   const supabase = await createClient();
-  const { data } = await supabase.from(name).select("*").limit(50);
+  const { data, error } = await supabase.from(name).select("*").limit(50);
+
+  // RLS admin belum tentu mengizinkan baca semua baris. Error dicatat supaya
+  // "tabel kosong" tidak disalahartikan sebagai "tidak ada data".
+  if (error) console.error(`[admin] gagal memuat ${name}:`, error.message);
+
   return (data ?? []) as Record<string, unknown>[];
 }
 
@@ -31,8 +36,14 @@ export default async function AdminOverview({ searchParams }: { searchParams: { 
         <table className="w-full text-left text-xs">
           <thead><tr className="border-b">{cols.map((c) => <th key={c} className="px-3 py-2 font-mono">{c}</th>)}</tr></thead>
           <tbody>
-            {rows.map((r, i) => (
-              <tr key={i} className="border-b">{cols.map((c) => <td key={c} className="max-w-64 truncate px-3 py-2">{String(r[c] ?? "")}</td>)}</tr>
+            {rows.map((r) => (
+              <tr key={String(r.id)} className="border-b">
+                {cols.map((c) => (
+                  <td key={c} className="max-w-64 truncate px-3 py-2">
+                    {String(r[c] ?? "")}
+                  </td>
+                ))}
+              </tr>
             ))}
           </tbody>
         </table>

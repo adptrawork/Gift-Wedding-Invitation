@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800" role="img" aria-label="Placeholder cover Romantic Garden">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFF3F5"/>
+      <stop offset="100%" stop-color="#E8B4BC"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#g)"/>
+  <g fill="#C97C8A" fill-opacity="0.5">
+    <circle cx="240" cy="180" r="70"/>
+    <circle cx="330" cy="140" r="48"/>
+    <circle cx="960" cy="620" r="80"/>
+    <circle cx="880" cy="670" r="52"/>
+  </g>
+  <g stroke="#8C4A55" stroke-opacity="0.4" stroke-width="3" fill="none">
+    <path d="M600 660 C 600 520, 520 470, 470 400"/>
+    <path d="M600 660 C 600 520, 690 470, 740 400"/>
+  </g>
+  <text x="600" y="300" text-anchor="middle" font-family="Georgia, serif" font-size="56" fill="#5B2A33">Romantic Garden</text>
+  <text x="600" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="22" fill="#8C4A55" letter-spacing="6">PLACEHOLDER</text>
+</svg>

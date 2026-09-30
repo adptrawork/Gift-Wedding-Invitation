@@ -18,17 +18,37 @@ export interface TemplateManifest {
 
 export type WeddingStatus = "draft" | "published";
 
+/**
+ * Template yang lolos filter status publish.
+ *
+ * `status` di sini sudah dinormalisasi ke "published" karena baris DB adalah
+ * sumber kebenaran; `version` tetap diambil dari manifest Git.
+ */
+export interface PublishedTemplate extends TemplateManifest {
+  /** Version yang dipakai customer baru. */
+  current_version: string;
+}
+
+/**
+ * Baris `weddings` sebagaimana dibaca lewat Supabase.
+ *
+ * Dua kolom konten punya peran berbeda dan tidak boleh tertukar:
+ *  - `draft_content` — yang sedang diedit customer (halaman edit & preview)
+ *  - `content`       — snapshot yang sudah di-publish (dibaca halaman publik)
+ */
 export interface Wedding {
   id: string;
   user_id: string;
-  template_id: string;
-  template_version_id: string;
-  template_slug: string;
+  template_id: string | null;
+  template_version_id: string | null;
   slug: string;
-  title: string;
+  title: string | null;
+  draft_content: Record<string, unknown>;
   content: Record<string, unknown>;
   status: WeddingStatus;
   published_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 // JSON Schema ekstensi: selain tipe standar, dukung image/audio/color/richtext

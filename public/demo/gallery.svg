@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600" role="img" aria-label="Galeri placeholder">
+  <rect width="800" height="600" fill="#D6D3D1"/>
+  <rect x="80" y="90" width="220" height="150" fill="#B8B5B2"/>
+  <rect x="330" y="90" width="220" height="150" fill="#C2BFBB"/>
+  <rect x="580" y="90" width="140" height="150" fill="#ADA9A6"/>
+  <rect x="80" y="270" width="350" height="200" fill="#BFBDB9"/>
+  <rect x="460" y="270" width="260" height="200" fill="#B2AFA9"/>
+  <text x="400" y="545" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="20" fill="#57534E" letter-spacing="4">GALERI</text>
+</svg>

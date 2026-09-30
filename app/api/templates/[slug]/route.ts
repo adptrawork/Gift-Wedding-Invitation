@@ -1,21 +1,24 @@
 import { NextResponse } from "next/server";
-import { getTemplate } from "@/lib/templates";
-import luxurySchema from "@/templates/luxury-gold/schema.json";
-import romanticSchema from "@/templates/romantic-garden/schema.json";
-import minimalSchema from "@/templates/modern-minimal/schema.json";
-import weddingGiftSchema from "@/templates/wedding-gift/schema.json";
-import birthdayGiftSchema from "@/templates/birthday-gift/schema.json";
+import { getSchema, getTemplate } from "@/lib/templates";
+import { listPublishedTemplates } from "@/lib/templates-db";
 
-const SCHEMAS: Record<string, unknown> = {
-  "luxury-gold": luxurySchema,
-  "romantic-garden": romanticSchema,
-  "modern-minimal": minimalSchema,
-  "wedding-gift": weddingGiftSchema,
-  "birthday-gift": birthdayGiftSchema,
-};
-
+/**
+ * GET /api/templates/[slug] — manifest + schema untuk build form.
+ *
+ * Schema dibaca dari registry Git, bukan dari DB: form generator harus selalu
+ * cocok dengan komponen template yang benar-benar ter-deploy.
+ */
 export async function GET(_req: Request, { params }: { params: { slug: string } }) {
   const manifest = getTemplate(params.slug);
   if (!manifest) return NextResponse.json({ error: "Template tidak ditemukan" }, { status: 404 });
-  return NextResponse.json({ manifest, schema: SCHEMAS[params.slug] ?? null });
+
+  // Kalau template di-unpublish, tetap bisa diambil lewat slug supaya preview
+  // admin dan undangan yang sudah live tidak ikut error.
+  const published = await listPublishedTemplates();
+
+  return NextResponse.json({
+    manifest,
+    schema: getSchema(params.slug) ?? null,
+    published: published.some((t) => t.slug === params.slug),
+  });
 }

@@ -3,21 +3,28 @@
 import { useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Hero, Couple, EventInfo, Story, Gallery, Countdown, MusicToggle, Footer } from "@/components/template-sdk";
+import { Hero, Couple, EventInfo, Story, Gallery, Countdown, MusicToggle, RSVP, Footer } from "@/components/template-sdk";
 
 gsap.registerPlugin(ScrollTrigger);
 
 interface WeddingData {
+  /** Diisi renderer dari baris `weddings`, bukan dari content customer. */
+  weddingId?: string;
   groom: { name: string; photo?: string };
   bride: { name: string; photo?: string };
   hero: { photo?: string; subtitle?: string };
-  event: { date: string; time?: string; venue?: string; address?: string; mapsUrl?: string };
+  event: { date?: string; time?: string; venue?: string; address?: string; mapsUrl?: string };
   story: { title?: string; content?: string };
   gallery: string[];
   music?: string;
   theme?: Record<string, string>;
 }
 
+/**
+ * Varian warna dari template yang sama. Warna bawaan dipakai hanya kalau
+ * customer belum memilih tema, jadi beberapa varian tetap bisa berbagi satu
+ * file template.
+ */
 function make(accent: string, bg: string, label: string) {
   return function Template({ data }: { data: WeddingData }) {
     useEffect(() => {
@@ -45,6 +52,7 @@ function make(accent: string, bg: string, label: string) {
         <EventInfo {...data.event} />
         {data.story.title ? <Story title={data.story.title} content={data.story.content ?? ""} /> : null}
         <Gallery photos={data.gallery} />
+        {data.weddingId ? <RSVP weddingId={data.weddingId} /> : null}
         <MusicToggle src={data.music} />
         <Footer text={`${data.groom.name} & ${data.bride.name} — ${label}`} />
       </main>

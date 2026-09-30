@@ -37,10 +37,27 @@ supabase/            # migrations/ + seed.sql (Supabase cloud)
 ## Supabase (cloud)
 
 1. Buat project di Supabase Dashboard.
-2. SQL Editor → jalankan `supabase/migrations/20260930000001_init.sql`.
-3. Jalankan `supabase/seed.sql` untuk registry template.
-4. Buat user admin via Authentication, lalu `update profiles set role='admin'`.
-5. Isi `.env` dari `.env.example`.
+2. SQL Editor → jalankan **berurutan**:
+   `20260930000001_init.sql` → `20260930000002_hardening.sql` → `20260930000003_duitku.sql` → `supabase/seed.sql`.
+3. Buat user admin via Authentication, lalu `update profiles set role='admin'`.
+4. Isi `.env` dari `.env.example`.
+
+## Payment (Duitku)
+
+Provider tunggal: **Duitku**. Ringkasnya:
+
+- `/api/orders` membuat invoice lewat Duitku Inquiry API; notifikasi pembayaran
+  masuk ke `/api/payments/webhook/duitku`.
+- Autentikasi webhook **wajib** lewat HMAC-SHA256 dengan formula
+  `merchantCode + amount + merchantOrderId`. Nilai `amount` dipakai apa adanya
+  dari body, tidak diparse lebih dulu.
+- Status order hanya berubah dari callback. `resultCode` pada redirect **tidak
+  dipercaya** — dokumentasi Duitku menyatakan URL redirect bisa diubah manual
+  oleh customer.
+- Callback wajib dapat diakses publik dan membalas HTTP 200, kalau tidak
+  Duitku mengulangnya maksimal 5 kali.
+
+Detail setup project Duitku ada di [SETUP.md](SETUP.md#4b-payment-duitku).
 
 ## Demo tanpa DB
 
