@@ -1,5 +1,32 @@
 # CHANGELOG
 
+## 2026-10-01 (lanjutan 4) — Sinkron env ke Vercel
+
+`scripts/vercel-env-sync.sh` (`vercel:env`) mendorong `.env` ke environment
+Vercel. Perlu karena nilai Vercel hanya dibaca saat build — mengubah `.env`
+lokal tidak menyentuh deployment yang sudah jadi.
+
+Dua jebakan yang sudah ditemukan:
+
+- **REST API v9 tidak bisa dipakai.** `DELETE /env/{key}?target=` tidak
+  menghapus apa pun, sehingga `POST` berikutnya tetap dibalas
+  `ENV_ALREADY_EXISTS` walau `?upsert=true` dipakai. Jadi harus `vercel env rm`
+  lalu `vercel env add`.
+- **CLI menerima satu environment per pemanggilan.** `production preview` sebagai
+  satu argumen ditolak; tiap target harus dipanggil terpisah.
+
+Tambahan: `NEXT_PUBLIC_*` tidak boleh memakai `--sensitive` (Vercel menolak,
+karena nilainya memang untuk browser), sedangkan `SUPABASE_SERVICE_ROLE_KEY` dan
+`DUITKU_*` memakai `--sensitive` supaya tidak terbaca plaintext di dashboard.
+`DATABASE_URL` dan `SUPABASE_DB_REGION` tidak dikirim — keduanya hanya dipakai
+`scripts/db-migrate.sh` di mesin lokal.
+
+`NEXT_PUBLIC_BASE_DOMAIN` di produksi dipaksa `localhost`: middleware memakainya
+untuk mengenali subdomain custom, jadi host DDEV tidak boleh ikut terbawa.
+
+Hasil setelah sinkron dan deploy ulang: `/api/payments/channels` naik dari 502
+(Duitku membalas 403) menjadi 200 dengan daftar channel sungguhan.
+
 ## 2026-10-01 (lanjutan 3) — Deploy Vercel production
 
 Project `gift-wedding-invitation` dibuat di Vercel dan dideploy ke

@@ -40,7 +40,8 @@
     "dev": "next dev --port 3000",
     "lint": "next lint",
     "start": "next start --port 3000",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "vercel:env": "bash scripts/vercel-env-sync.sh"
   },
   "version": "0.1.0"
 }
