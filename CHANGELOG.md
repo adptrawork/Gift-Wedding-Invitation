@@ -1,5 +1,35 @@
 # CHANGELOG
 
+## 2026-10-01 (lanjutan 3) — Deploy Vercel production
+
+Project `gift-wedding-invitation` dibuat di Vercel dan dideploy ke
+`https://gift-wedding.vercel.app`. Sepuluh variabel env diteruskan lewat
+dashboard Vercel; `DATABASE_URL` dan `SUPABASE_DB_REGION` sengaja tidak, karena
+hanya dipakai `scripts/db-migrate.sh` yang berjalan di mesin lokal.
+
+### `.vercelignore` (baru)
+
+Vercel menyalin sumber memakai `.vercelignore`, bukan `.gitignore`. Tanpa file
+itu `.env` ikut terupload ke server build, sehingga secret Supabase dan Duitku
+bisa bocor ke build log. Isinya mengecualikan `.env`, `.env*.local`,
+direktori build, `node_modules`, `.ddev`, dan `scripts`.
+
+### Build dan dev server tidak lagi berbagi direktori output
+
+`ddev npm run build` gagal dengan `Cannot find module for page:
+/api/admin/templates/[slug]` dan dev server membalas 500 untuk semua request.
+Penyebabnya bukan route yang hilang — file-nya ada dan `next build` berhasil
+sebelum Vercel ada. `next dev` (dijalankan otomatis oleh `web_extra_daemons`)
+dan `next build` sama-sama menulis hasil kompilasi ke `.next/server`, dan saat
+keduanya hidup bersamaan, satu menimpa yang lain.
+
+Perbaikan: `next build` sekarang memakai `distDir` sendiri lewat
+`NEXT_DIST_DIR=.next-build`. Next.js hanya membaca `distDir` dari konfigurasi
+bukan dari env, jadi variabelnya dibaca di `next.config.mjs`. Dev server tetap
+pakai `.next`. Setelah ini build produksi bisa dijalankan tanpa mematikan dev
+server — sudah diuji: build sukses sementara `/`, `/api/templates`,
+`/demo-andi-sinta`, dan `/api/payments/channels` tetap 200.
+
 ## 2026-10-01 (lanjutan 2) — Data dummy untuk demo
 
 `scripts/seed-dummy.mjs` (`db:seed:demo`) mengisi database yang tadinya hanya

@@ -33,7 +33,7 @@
   "name": "gift-wedding-invitation",
   "private": true,
   "scripts": {
-    "build": "next build",
+    "build": "NEXT_DIST_DIR=.next-build next build",
     "check:duitku": "node scripts/check-duitku.mjs",
     "db:migrate": "bash scripts/db-migrate.sh",
     "db:seed:demo": "node scripts/seed-dummy.mjs",

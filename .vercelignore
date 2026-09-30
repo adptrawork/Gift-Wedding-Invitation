@@ -1,0 +1,16 @@
+# Vercel memakai .vercelignore, bukan .gitignore, saat menyalin sumber ke
+# server build. Tanpa file ini .env ikut terupload dan secret Supabase serta
+# Duitku bocor ke build log.
+
+.env
+.env*.local
+.next
+.next-build
+node_modules
+.ddev
+.git
+scripts
+tasks
+.next-docs
+*.log
+*.md
