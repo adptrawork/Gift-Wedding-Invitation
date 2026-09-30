@@ -41,6 +41,7 @@ alter table public.orders add column if not exists provider_ref text;
 -- ============ 4. rsvps: hanya untuk wedding published ============
 drop policy if exists "rsvps public insert" on public.rsvps;
 
+drop policy if exists "rsvps insert published wedding" on public.rsvps;
 create policy "rsvps insert published wedding" on public.rsvps for insert
   with check (
     exists (

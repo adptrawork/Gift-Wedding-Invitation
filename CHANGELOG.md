@@ -1,5 +1,41 @@
 # CHANGELOG
 
+## 2026-10-01 — Database Supabase terpasang, dev server otomatis
+
+### Migrasi database
+
+Schema, seed template, dan bucket storage sudah diterapkan ke project
+`qovsxnasojsnvzzfldxg` (region `ap-south-1`, PostgreSQL 17.11).
+
+- `scripts/db-migrate.sh` — menjalankan keempat file migrasi berurutan lewat
+  `psql` dari dalam container DDEV, dengan verifikasi jumlah tabel, template,
+  bucket, dan constraint payment di akhir. Terdaftar sebagai `db:migrate`.
+- Koneksi langsung ke `db.<ref>.supabase.co` tidak bisa dipakai dari jaringan
+  ini: host itu hanya punya alamat IPv6, sedangkan jaringan lokal dan container
+  DDEV rootless tidak punya route IPv6 global. Script mencoba koneksi langsung
+  dulu, lalu fallback ke Supavisor (IPv4) dengan user `postgres.<project-ref>`.
+  Region dibaca dari `SUPABASE_DB_REGION`.
+- **Perbaikan idempotensi.** PostgreSQL tidak punya
+  `create policy if not exists`, jadi 24 `create policy` gagal di run kedua
+  dengan `policy ... already exists` — padahal dokumentasi mengklaim migrasi
+  aman diulang. Setiap `create policy` sekarang didahului
+  `drop policy if exists`. Dua run berturut-turut sudah diuji bersih.
+
+Hasil verifikasi: 9 tabel dengan RLS aktif, 22 policy di 10 tabel, 3 trigger
+`set_updated_at`, index unik `payments_provider_tx_uniq`, bucket
+`wedding-media` public, constraint `payments.provider in ('duitku')`, 5
+template + 5 template_versions. Uji RLS sebagai role `anon`: 5 template
+published terbaca, `profiles`/`orders`/`payments` tetap 0.
+
+### DDEV
+
+- `web_extra_daemons` menjalankan `npm run dev` otomatis. Sebelumnya container
+  hidup tapi port 3000 kosong, sehingga ddev-router membalas 502 Bad Gateway
+  padahal `ddev status` hijau.
+- `next.config.mjs` — `allowedDevOrigins` untuk host ddev-router.
+- Dokumentasi: URL lokal per protokol, urutan quickstart tanpa menjalankan dev
+  server dua kali, dan langkah diagnosis 502.
+
 ## 2026-09-30 — Hardening + migrasi payment ke Duitku
 
 ### Payment: Midtrans/Xendit → Duitku

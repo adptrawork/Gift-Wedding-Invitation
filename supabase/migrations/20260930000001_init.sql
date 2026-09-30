@@ -170,32 +170,43 @@ alter table public.rsvps enable row level security;
 alter table public.media enable row level security;
 
 -- profiles: own read/update; admin all
+drop policy if exists "profiles own select" on public.profiles;
 create policy "profiles own select" on public.profiles for select
   using ((select auth.uid()) = id or public.is_admin());
+drop policy if exists "profiles own update" on public.profiles;
 create policy "profiles own update" on public.profiles for update
   using ((select auth.uid()) = id);
 
 -- templates + versions: public read published; admin all
+drop policy if exists "templates public read published" on public.templates;
 create policy "templates public read published" on public.templates for select
   using (status = 'published' or public.is_admin());
+drop policy if exists "templates admin write" on public.templates;
 create policy "templates admin write" on public.templates for all
   using (public.is_admin()) with check (public.is_admin());
+drop policy if exists "versions public read published" on public.template_versions;
 create policy "versions public read published" on public.template_versions for select
   using (status = 'published' or public.is_admin());
+drop policy if exists "versions admin write" on public.template_versions;
 create policy "versions admin write" on public.template_versions for all
   using (public.is_admin()) with check (public.is_admin());
 
 -- weddings: owner CRUD; anon+auth read published; admin all
+drop policy if exists "weddings owner select" on public.weddings;
 create policy "weddings owner select" on public.weddings for select
   using ((select auth.uid()) = user_id or status = 'published' or public.is_admin());
+drop policy if exists "weddings owner insert" on public.weddings;
 create policy "weddings owner insert" on public.weddings for insert
   with check ((select auth.uid()) = user_id);
+drop policy if exists "weddings owner update" on public.weddings;
 create policy "weddings owner update" on public.weddings for update
   using ((select auth.uid()) = user_id or public.is_admin());
+drop policy if exists "weddings owner delete" on public.weddings;
 create policy "weddings owner delete" on public.weddings for delete
   using ((select auth.uid()) = user_id or public.is_admin());
 
 -- wedding_domains: owner via wedding; public read verified
+drop policy if exists "domains read" on public.wedding_domains;
 create policy "domains read" on public.wedding_domains for select
   using (
     verified = true
@@ -205,6 +216,7 @@ create policy "domains read" on public.wedding_domains for select
       where w.id = wedding_id and w.user_id = (select auth.uid())
     )
   );
+drop policy if exists "domains owner write" on public.wedding_domains;
 create policy "domains owner write" on public.wedding_domains for all
   using (
     public.is_admin()
@@ -222,12 +234,15 @@ create policy "domains owner write" on public.wedding_domains for all
   );
 
 -- orders: owner read/insert; admin all (status update via service_role webhook)
+drop policy if exists "orders owner select" on public.orders;
 create policy "orders owner select" on public.orders for select
   using ((select auth.uid()) = user_id or public.is_admin());
+drop policy if exists "orders owner insert" on public.orders;
 create policy "orders owner insert" on public.orders for insert
   with check ((select auth.uid()) = user_id);
 
 -- payments: via order ownership; admin all
+drop policy if exists "payments read" on public.payments;
 create policy "payments read" on public.payments for select
   using (
     public.is_admin()
@@ -238,7 +253,9 @@ create policy "payments read" on public.payments for select
   );
 
 -- rsvps: public insert; owner/admin read
+drop policy if exists "rsvps public insert" on public.rsvps;
 create policy "rsvps public insert" on public.rsvps for insert with check (true);
+drop policy if exists "rsvps owner read" on public.rsvps;
 create policy "rsvps owner read" on public.rsvps for select
   using (
     public.is_admin()
@@ -249,10 +266,13 @@ create policy "rsvps owner read" on public.rsvps for select
   );
 
 -- media: owner CRUD; admin all
+drop policy if exists "media owner select" on public.media;
 create policy "media owner select" on public.media for select
   using ((select auth.uid()) = user_id or public.is_admin());
+drop policy if exists "media owner insert" on public.media;
 create policy "media owner insert" on public.media for insert
   with check ((select auth.uid()) = user_id);
+drop policy if exists "media owner delete" on public.media;
 create policy "media owner delete" on public.media for delete
   using ((select auth.uid()) = user_id or public.is_admin());
 
@@ -261,9 +281,12 @@ insert into storage.buckets (id, name, public)
 values ('wedding-media', 'wedding-media', false)
 on conflict (id) do nothing;
 
+drop policy if exists "storage owner insert" on storage.objects;
 create policy "storage owner insert" on storage.objects for insert
   with check (bucket_id = 'wedding-media' and (select auth.uid())::text = (storage.foldername(name))[1]);
+drop policy if exists "storage owner read" on storage.objects;
 create policy "storage owner read" on storage.objects for select
   using (bucket_id = 'wedding-media' and (select auth.uid())::text = (storage.foldername(name))[1]);
+drop policy if exists "storage owner delete" on storage.objects;
 create policy "storage owner delete" on storage.objects for delete
   using (bucket_id = 'wedding-media' and (select auth.uid())::text = (storage.foldername(name))[1]);

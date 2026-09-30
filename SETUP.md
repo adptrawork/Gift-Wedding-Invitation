@@ -59,32 +59,44 @@ belum terpasang: `ddev npm install`.
 
 ## 4. Database Supabase
 
-1. Supabase Dashboard → SQL Editor.
-2. Jalankan **berurutan** — `000002` dan `00003` bergantung pada `00001`:
-   1. `supabase/migrations/20260930000001_init.sql`
-   2. `supabase/migrations/20260930000002_hardening.sql`
-   3. `supabase/migrations/20260930000003_duitku.sql`
-   4. `supabase/seed.sql`
-3. Authentication → buat user → `profiles.role = 'admin'` untuk akun admin.
-
-Semua statement dibuat idempoten (`if not exists` / `drop … if exists`), jadi
-aman dijalankan ulang.
-
-Alternatif tanpa SQL Editor — pakai `psql` dari dalam container DDEV:
+Isi `DATABASE_URL` dan `SUPABASE_DB_REGION` di `.env` lebih dulu, lalu:
 
 ```bash
-# taruh di .env (gitignored, jangan di-commit)
-# DATABASE_URL=postgresql://postgres:<password>@db.<ref>.supabase.co:5432/postgres
-
-ddev exec bash -c '
-  for f in supabase/migrations/20260930000001_init.sql \
-           supabase/migrations/20260930000002_hardening.sql \
-           supabase/migrations/20260930000003_duitku.sql \
-           supabase/seed.sql; do
-    echo "== $f"
-    psql -v ON_ERROR_STOP=1 -f "$f"
-  done'
+ddev exec bash scripts/db-migrate.sh
 ```
+
+Script itu menjalankan keempat file berurutan — `000002` dan `00003` bergantung
+pada `00001`:
+
+1. `supabase/migrations/20260930000001_init.sql`
+2. `supabase/migrations/20260930000002_hardening.sql`
+3. `supabase/migrations/20260930000003_duitku.sql`
+4. `supabase/seed.sql`
+
+Alternatif manual: Supabase Dashboard → SQL Editor, jalankan keempat file itu
+berurutan.
+
+Setelah itu daftarkan user lewat `/register`, lalu jadikan admin:
+
+```sql
+update public.profiles set role = 'admin' where id = '<user-uuid>';
+```
+
+### Idempotensi
+
+Semua statement aman dijalankan ulang. Table, index, trigger, dan bucket pakai
+`if not exists` / `on conflict do nothing`. Policy berbeda: PostgreSQL tidak
+punya `create policy if not exists`, jadi setiap `create policy` didahului
+`drop policy if exists`. Tanpa itu migrasi gagal di run kedua.
+
+### Kenapa harus lewat pooler
+
+Host `db.<ref>.supabase.co` hanya mengembalikan alamat IPv6 (AAAA). Jaringan
+rumah dan container DDEV rootless tidak selalu punya route IPv6 global, sehingga
+koneksi langsung gagal dengan `Network is unreachable`. `scripts/db-migrate.sh`
+mencoba koneksi langsung lebih dulu, lalu otomatis fallback ke Supavisor (IPv4)
+memakai `SUPABASE_DB_REGION`. User ke pooler berawalan project ref, mis.
+`postgres.<project-ref>`.
 
 `SUPABASE_SERVICE_ROLE_KEY` tidak bisa dipakai untuk menjalankan SQL — key itu
 hanya berlaku untuk PostgREST/Storage/Auth, bukan eksekusi DDL.
