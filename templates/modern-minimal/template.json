@@ -1,0 +1,15 @@
+{
+  "id": "00000000-0000-0000-0000-000000000003",
+  "name": "Modern Minimal",
+  "slug": "modern-minimal",
+  "version": "1.0.0",
+  "description": "Undangan wedding modern minimalis",
+  "category": "wedding",
+  "preview": "/templates/modern-minimal/preview.jpg",
+  "thumbnail": "/templates/modern-minimal/thumbnail.jpg",
+  "author": { "name": "Platform Studio" },
+  "features": ["responsive", "gallery", "rsvp", "gift", "music", "countdown"],
+  "engine": { "type": "react", "version": "1" },
+  "animations": { "gsap": true, "lenis": true, "three": false },
+  "status": "published"
+}

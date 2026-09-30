@@ -1,0 +1,15 @@
+{
+  "id": "00000000-0000-0000-0000-000000000002",
+  "name": "Romantic Garden",
+  "slug": "romantic-garden",
+  "version": "1.0.0",
+  "description": "Undangan wedding romantis nuansa taman bunga",
+  "category": "wedding",
+  "preview": "/templates/romantic-garden/preview.jpg",
+  "thumbnail": "/templates/romantic-garden/thumbnail.jpg",
+  "author": { "name": "Platform Studio" },
+  "features": ["responsive", "gallery", "rsvp", "gift", "music", "countdown"],
+  "engine": { "type": "react", "version": "1" },
+  "animations": { "gsap": true, "lenis": true, "three": false },
+  "status": "published"
+}

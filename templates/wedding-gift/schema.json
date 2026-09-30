@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Gift Invitation",
+  "type": "object",
+  "properties": {
+    "recipient": {
+      "type": "object",
+      "title": "Penerima",
+      "properties": {
+        "name": { "type": "string", "title": "Nama Penerima" },
+        "photo": { "type": "image", "title": "Foto Penerima" }
+      },
+      "required": ["name"]
+    },
+    "cover": {
+      "type": "object",
+      "title": "Sampul",
+      "properties": {
+        "photo": { "type": "image", "title": "Foto Sampul" },
+        "title": { "type": "string", "title": "Judul", "default": "Kado Spesial Untukmu" }
+      }
+    },
+    "message": {
+      "type": "object",
+      "title": "Pesan",
+      "properties": {
+        "title": { "type": "string", "title": "Judul Pesan" },
+        "content": { "type": "richtext", "title": "Isi Pesan" }
+      }
+    },
+    "gift": {
+      "type": "object",
+      "title": "Kado",
+      "properties": {
+        "amount": { "type": "string", "title": "Nominal (Rp, opsional)" },
+        "note": { "type": "textarea", "title": "Catatan" }
+      }
+    },
+    "music": { "type": "audio", "title": "Musik" },
+    "theme": {
+      "type": "object",
+      "title": "Tema",
+      "properties": {
+        "primary": { "type": "color", "title": "Warna Utama", "default": "#B76E79" },
+        "background": { "type": "color", "title": "Latar", "default": "#FFF9F7" },
+        "text": { "type": "color", "title": "Teks", "default": "#333333" },
+        "fontHeading": { "type": "string", "title": "Font Judul", "default": "Playfair Display, serif" },
+        "fontBody": { "type": "string", "title": "Font Isi", "default": "Inter, sans-serif" }
+      }
+    }
+  }
+}

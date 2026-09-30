@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Luxury Gold Wedding",
+  "type": "object",
+  "properties": {
+    "groom": {
+      "type": "object",
+      "title": "Mempelai Pria",
+      "properties": {
+        "name": { "type": "string", "title": "Nama Mempelai Pria" },
+        "photo": { "type": "image", "title": "Foto Mempelai Pria" }
+      },
+      "required": ["name"]
+    },
+    "bride": {
+      "type": "object",
+      "title": "Mempelai Wanita",
+      "properties": {
+        "name": { "type": "string", "title": "Nama Mempelai Wanita" },
+        "photo": { "type": "image", "title": "Foto Mempelai Wanita" }
+      },
+      "required": ["name"]
+    },
+    "hero": {
+      "type": "object",
+      "title": "Cover",
+      "properties": {
+        "photo": { "type": "image", "title": "Foto Cover" },
+        "subtitle": { "type": "string", "title": "Subtitle", "default": "The Wedding Celebration" }
+      }
+    },
+    "event": {
+      "type": "object",
+      "title": "Acara",
+      "properties": {
+        "date": { "type": "date", "title": "Tanggal Pernikahan" },
+        "time": { "type": "string", "title": "Waktu" },
+        "venue": { "type": "string", "title": "Nama Gedung" },
+        "address": { "type": "textarea", "title": "Alamat" },
+        "mapsUrl": { "type": "url", "title": "Google Maps" }
+      }
+    },
+    "story": {
+      "type": "object",
+      "title": "Cerita",
+      "properties": {
+        "title": { "type": "string", "title": "Judul Cerita" },
+        "content": { "type": "richtext", "title": "Cerita" }
+      }
+    },
+    "gallery": { "type": "array", "title": "Galeri", "items": { "type": "image" } },
+    "music": { "type": "audio", "title": "Musik" },
+    "theme": {
+      "type": "object",
+      "title": "Tema",
+      "properties": {
+        "primary": { "type": "color", "title": "Warna Utama", "default": "#C9A227" },
+        "background": { "type": "color", "title": "Latar", "default": "#FAF7F0" },
+        "text": { "type": "color", "title": "Teks", "default": "#222222" },
+        "fontHeading": { "type": "string", "title": "Font Judul", "default": "Playfair Display, serif" },
+        "fontBody": { "type": "string", "title": "Font Isi", "default": "Inter, sans-serif" }
+      }
+    }
+  }
+}

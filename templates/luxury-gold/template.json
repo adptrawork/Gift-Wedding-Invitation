@@ -1,0 +1,15 @@
+{
+  "id": "00000000-0000-0000-0000-000000000001",
+  "name": "Luxury Gold",
+  "slug": "luxury-gold",
+  "version": "1.0.0",
+  "description": "Undangan wedding mewah nuansa emas",
+  "category": "wedding",
+  "preview": "/templates/luxury-gold/preview.jpg",
+  "thumbnail": "/templates/luxury-gold/thumbnail.jpg",
+  "author": { "name": "Platform Studio" },
+  "features": ["responsive", "gallery", "rsvp", "gift", "music", "countdown"],
+  "engine": { "type": "react", "version": "1" },
+  "animations": { "gsap": true, "lenis": true, "three": false },
+  "status": "published"
+}
