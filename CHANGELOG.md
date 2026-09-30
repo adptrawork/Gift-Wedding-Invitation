@@ -23,11 +23,13 @@ sebelum Vercel ada. `next dev` (dijalankan otomatis oleh `web_extra_daemons`)
 dan `next build` sama-sama menulis hasil kompilasi ke `.next/server`, dan saat
 keduanya hidup bersamaan, satu menimpa yang lain.
 
-Perbaikan: `next build` sekarang memakai `distDir` sendiri lewat
-`NEXT_DIST_DIR=.next-build`. Next.js hanya membaca `distDir` dari konfigurasi
-bukan dari env, jadi variabelnya dibaca di `next.config.mjs`. Dev server tetap
-pakai `.next`. Setelah ini build produksi bisa dijalankan tanpa mematikan dev
-server — sudah diuji: build sukses sementara `/`, `/api/templates`,
+Perbaikan: `next build` di luar Vercel memakai `distDir` sendiri
+lewat `NEXT_DIST_DIR=.next-build`, dibaca di `next.config.mjs`. Di Vercel
+`distDir` tetap `.next`, karena platform mencari
+`.next/routes-manifest.json` di path tetap dan build gagal kalau dipindah.
+Dev server juga tetap pakai `.next`. Setelah ini build produksi bisa
+dijalankan tanpa mematikan dev server — sudah diuji: build sukses sementara
+`/`, `/api/templates`,
 `/demo-andi-sinta`, dan `/api/payments/channels` tetap 200.
 
 ## 2026-10-01 (lanjutan 2) — Data dummy untuk demo
