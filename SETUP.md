@@ -31,13 +31,31 @@ Isi minimal:
 ## 3. Start DDEV
 
 ```bash
-ddev start
 ddev npm install
-ddev npm run dev
+ddev start
+ddev launch
 ```
 
-Buka `https://gift-wedding.ddev.site:3001` (port host menyesuaikan bila 3000 bentrok —
-lihat output `ddev describe`).
+`ddev start` menjalankan `next dev` sendiri lewat `web_extra_daemons`, jadi
+`ddev npm run dev` tidak perlu dijalankan manual — menjalankannya dua kali akan
+membuat dua proses berebut port 3000.
+
+Buka `https://gift-wedding.ddev.site:3001` (port host untuk HTTP menyesuaikan
+bila 3000 bentrok — lihat output `ddev describe`).
+
+### Troubleshooting: 502 Bad Gateway
+
+502 dari `*.ddev.site` artinya ddev-router tidak punya backend, yaitu tidak ada
+proses yang listen di port 3000 di dalam container. Container bisa saja hidup
+normal, jadi `ddev status` tetap hijau — itu bukan tanda dev server hidup.
+
+```bash
+ddev restart
+docker logs --tail 30 ddev-gift-wedding-web   # harus ada "✓ Ready in ..."
+```
+
+Kalau lognya berhenti di "Starting..." tanpa "Ready", biasanya `node_modules`
+belum terpasang: `ddev npm install`.
 
 ## 4. Database Supabase
 
@@ -51,6 +69,25 @@ lihat output `ddev describe`).
 
 Semua statement dibuat idempoten (`if not exists` / `drop … if exists`), jadi
 aman dijalankan ulang.
+
+Alternatif tanpa SQL Editor — pakai `psql` dari dalam container DDEV:
+
+```bash
+# taruh di .env (gitignored, jangan di-commit)
+# DATABASE_URL=postgresql://postgres:<password>@db.<ref>.supabase.co:5432/postgres
+
+ddev exec bash -c '
+  for f in supabase/migrations/20260930000001_init.sql \
+           supabase/migrations/20260930000002_hardening.sql \
+           supabase/migrations/20260930000003_duitku.sql \
+           supabase/seed.sql; do
+    echo "== $f"
+    psql -v ON_ERROR_STOP=1 -f "$f"
+  done'
+```
+
+`SUPABASE_SERVICE_ROLE_KEY` tidak bisa dipakai untuk menjalankan SQL — key itu
+hanya berlaku untuk PostgREST/Storage/Auth, bukan eksekusi DDL.
 
 ## 4b. Payment Duitku
 

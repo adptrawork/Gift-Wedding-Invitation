@@ -7,17 +7,28 @@ Platform SaaS undangan digital **Wedding + Gift** dengan **Template Engine**
 
 ```bash
 cp .env.example .env        # isi kredensial Supabase cloud
-ddev start                  # https://gift-wedding.ddev.site
 ddev npm install
-ddev npm run dev            # Next.js :3000 (router https :3001)
-ddev launch
+ddev start                  # menjalankan Next.js dev server otomatis
+ddev launch                 # membuka https://gift-wedding.ddev.site:3001
 ```
+
+`ddev start` sudah menjalankan `next dev` di dalam container lewat
+`web_extra_daemons`, jadi tidak perlu `ddev npm run dev` lagi. Kalau halaman
+balas **502 Bad Gateway**, berarti tidak ada proses di port 3000 — jalankan
+`ddev restart` lalu cek `docker logs --tail 30 ddev-gift-wedding-web`.
+
+URL lokal:
+
+| Protokol | URL | Catatan |
+| --- | --- | --- |
+| HTTPS | `https://gift-wedding.ddev.site:3001` | yang dipakai `ddev launch` |
+| HTTP | `http://gift-wedding.ddev.site:3000` | port 3000 host bisa dipakai proses lain, lalu DDEV menggeser ke `:33000` |
 
 Perintah harian:
 
 ```bash
 ddev start
-ddev npm run dev
+ddev restart                # mulai ulang container + dev server
 ddev npm run typecheck
 ddev npm run lint
 ddev exec <cmd>

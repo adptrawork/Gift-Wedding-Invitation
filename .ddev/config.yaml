@@ -25,6 +25,16 @@ web_extra_exposed_ports:
     http_port: 3000
     https_port: 3001
 
+# Next.js dev server dijalankan otomatis oleh DDEV saat `ddev start`.
+# Tanpa ini, container tetap hidup tapi tidak ada yang listen di port 3000,
+# sehingga ddev-router membalas 502 Bad Gateway.
+# Catatan: URL lokal adalah https://gift-wedding.ddev.site:3001
+# (https memakai port 3001, http memakai port 3000).
+web_extra_daemons:
+  - name: "next-dev"
+    command: "npm run dev"
+    directory: "/var/www/html"
+
 # Key features of DDEV's config.yaml:
 
 # name: <projectname> # Name of the project, automatically provides
