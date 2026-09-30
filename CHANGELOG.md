@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 2026-10-01 (lanjutan 2) — Data dummy untuk demo
+
+`scripts/seed-dummy.mjs` (`db:seed:demo`) mengisi database yang tadinya hanya
+berisi registry template: 4 user (1 admin, 3 customer), 5 undangan di berbagai
+tahap lifecycle, 7 RSVP, dan 3 order dengan status paid/pending/failed supaya
+halaman billing punya riwayat. Idempoten, dan `--clean` menghapus semuanya
+termasuk user lewat Auth Admin API. Semua slug berawalan `demo-`.
+
+Cara buat user lewat Auth Admin API (`email_confirm: true`) alih-alih signup
+biasa: signup kena rate limit email Supabase, sedangkan Admin API tidak
+mengirim email sama sekali.
+
 ## 2026-10-01 (lanjutan) — Smoke test end-to-end, tiga bug diperbaiki
 
 ### Hasil pengujian

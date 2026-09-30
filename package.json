@@ -36,6 +36,7 @@
     "build": "next build",
     "check:duitku": "node scripts/check-duitku.mjs",
     "db:migrate": "bash scripts/db-migrate.sh",
+    "db:seed:demo": "node scripts/seed-dummy.mjs",
     "dev": "next dev --port 3000",
     "lint": "next lint",
     "start": "next start --port 3000",

@@ -145,6 +145,44 @@ Status order hanya berubah lewat callback. Kalau order masih `pending`, pakai
 tombol **Cek status** di `/dashboard/billing` (panggil manual, jangan cron —
 Duitku membatasi rate limit API `transactionStatus`).
 
+## 4c. Data dummy untuk demo
+
+Database hasil migrasi hanya berisi registry template — belum ada pengguna,
+undangan, atau transaksi. Supaya dashboard dan halaman publik langsung punya
+isi, jalankan seed dummy:
+
+```bash
+ddev npm run db:seed:demo
+```
+
+Script `scripts/seed-dummy.mjs` membuat lewat Supabase Auth Admin API (bukan
+signup, supaya tidak terkena rate limit email):
+
+| Peran | Email | Password |
+| --- | --- | --- |
+| admin | `admin@demo.test` | `Demo1234!` |
+| customer | `andi@demo.test` | `Demo1234!` |
+| customer | `sinta@demo.test` | `Demo1234!` |
+| customer | `bunga@demo.test` | `Demo1234!` |
+
+Undangan yang dibuat, semuanya berawalan slug `demo-`:
+
+| Slug | Template | Status |
+| --- | --- | --- |
+| `/demo-andi-sinta` | luxury-gold | published, 4 RSVP, order `premium` sudah `paid` |
+| `/demo-dewi-rizky` | romantic-garden | published, 2 RSVP, order `basic` `pending` |
+| `/demo-modern-rizky` | modern-minimal | published, 1 RSVP, order `basic` `failed` |
+| `/demo-gift-rizky` | wedding-gift | published (undangan kado) |
+| `/demo-draft-belum-jadi` | luxury-gold | **draft** — untuk mencoba alur preview sebelum publish |
+
+Script ini idempoten: dijalankan dua kali tidak menggandakan data. Hapus dengan
+`--clean` (atau `ddev npm run db:seed:demo -- --clean`), yang sekaligus
+menghapus user lewat Auth Admin API.
+
+> Password demo ini bukan rahasia dan disengaja diketahui publik supaya mudah
+> dibagikan saat demo. Tetap jangan pernah menjalankan script ini di database
+> produksi.
+
 ## 5. Verifikasi
 
 ```bash
@@ -155,6 +193,15 @@ ddev npm run check:duitku    # diagnosa kredensial Duitku, tanpa membuat transak
 ```
 
 Buka `/demo-luxury-gold` — undangan harus render dengan animasi GSAP.
+
+Cek cepat data dummy benar-benar hidup:
+
+```bash
+for s in demo-andi-sinta demo-gift-rizky demo-draft-belum-jadi; do
+  curl -s -o /dev/null -w "/$s -> %{http_code}\n" "https://gift-wedding.ddev.site:3001/$s"
+done
+# tiga published -> 200, draft -> 404
+```
 
 ## 6. Troubleshooting
 
