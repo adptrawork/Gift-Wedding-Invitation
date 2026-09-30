@@ -14,7 +14,7 @@ export default async function PublicSlugPage({ params }: { params: { slug: strin
   let row: Row | null = null;
   try {
     if (process.env.NEXT_PUBLIC_SUPABASE_URL?.startsWith("http")) {
-      const supabase = createClient();
+      const supabase = await createClient();
       const { data } = await supabase
         .from("weddings")
         .select("content, status, templates(slug)")

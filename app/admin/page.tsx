@@ -2,13 +2,13 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 async function table(name: "profiles" | "orders" | "weddings") {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data } = await supabase.from(name).select("*").limit(50);
   return (data ?? []) as Record<string, unknown>[];
 }
 
 export default async function AdminOverview({ searchParams }: { searchParams: { t?: string } }) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
