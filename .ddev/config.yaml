@@ -15,7 +15,7 @@ omit_containers: [db]
 use_dns_when_possible: true
 composer_version: "2"
 web_environment: []
-nodejs_version: "20"
+nodejs_version: "22"
 corepack_enable: false
 working_dir:
   web: /var/www/html

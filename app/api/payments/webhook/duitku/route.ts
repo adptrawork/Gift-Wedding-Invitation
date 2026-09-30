@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { readDuitkuConfig, verifyCallback, type DuitkuCallback } from "@/lib/payments/duitku";
-import { getServiceClient, recordPayment } from "@/lib/payments/record";
+import { getServiceClient } from "@/lib/supabase/service";
+import { recordPayment } from "@/lib/payments/record";
 
 /**
  * Notifikasi Duitku (`callbackUrl`).

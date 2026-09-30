@@ -1,13 +1,24 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getServiceClient } from "@/lib/supabase/service";
 import { rsvpSchema } from "@/lib/validation";
 
 /**
  * POST /api/rsvps — tamu konfirmasi kehadiran.
  *
- * dipanggil tanpa login. Policy RLS "rsvps insert published wedding"
- * (migration 000002) juga menolak insert untuk wedding yang belum published,
- * jadi datapakai langsung lewat anon key tidak bisa menulis ke wedding draft.
+ * Dipanggil tanpa login, jadi tidak ada sesi yang bisa dipakai untuk insert.
+ * Role `anon` sebenarnya boleh INSERT lewat policy RLS "rsvps insert published
+ * wedding" (migration 000002), tapi TIDAK boleh SELECT baris rsvps: nama,
+ * pesan, dan jumlah tamu adalah data pribadi pemilik undangan.
+ *
+ * Karena itu `.insert().select("id")` — yang menambah header
+ * `Prefer: return=representation` sehingga Postgres menjalankan
+ * `INSERT ... RETURNING` — ditolak dengan 42501. Daripada melonggarkan policy
+ * SELECT, insert ditulis lewat service_role setelah route memverifikasi bahwa
+ * wedding-nya benar-benar published.
+ *
+ * Policy RLS tetap berguna sebagai pertahanan kedua: publishable key ada di
+ * browser, jadi PostgREST bisa dipanggil langsung tanpa melewati route ini.
  */
 export async function POST(req: Request) {
   let body: unknown;
@@ -36,7 +47,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Undangan belum dipublish" }, { status: 409 });
   }
 
-  const { data, error } = await supabase
+  // Insert lewat service_role, bukan client anonim. Pemeriksaan published di
+  // atas sudah menjadi otorisasi di sisi aplikasi, dan policy RLS tetap
+  // melindungi wedding yang belum tayang dari penulisan langsung lewat
+  // PostgREST memakai publishable key.
+  const service = getServiceClient();
+  if (!service) {
+    return NextResponse.json(
+      { error: "Server belum dikonfigurasi untuk menerima RSVP" },
+      { status: 503 }
+    );
+  }
+
+  const { data, error } = await service
     .from("rsvps")
     .insert({
       wedding_id: parsed.data.wedding_id,
@@ -49,10 +72,6 @@ export async function POST(req: Request) {
     .single();
 
   if (error) {
-    // 42501 = RLS menolak. Umumnya karena wedding belum published.
-    if (error.code === "42501") {
-      return NextResponse.json({ error: "Undangan belum menerima RSVP" }, { status: 409 });
-    }
     console.error("[rsvps] insert gagal:", error.message);
     return NextResponse.json({ error: "Gagal menyimpan RSVP" }, { status: 500 });
   }

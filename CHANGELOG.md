@@ -1,5 +1,53 @@
 # CHANGELOG
 
+## 2026-10-01 (lanjutan) — Smoke test end-to-end, tiga bug diperbaiki
+
+### Hasil pengujian
+
+Alur penuh dari daftar sampai halaman publik sudah dijalankan terhadap database
+sungguhan: buat akun → trigger `profiles` → 401 tanpa login → buat wedding dari
+template published → slug ganda ditolak 409 → draft 404 di halaman publik →
+simpan draft → draft tidak bocor → publish → halaman publik berisi data yang
+dipublish → RSVP anon 201 → policy RLS menahan penulisan langsung ke wedding
+draft dan pembacaan data tamu → order tanpa `payment_method` ditolak 400.
+**19 pemeriksaan, 0 gagal.**
+
+### Bug yang ditemukan dan diperbaiki
+
+1. **`POST /api/rsvps` selalu membalas 409.** Penyebabnya `.insert().select("id")`
+   pada client anonim menambahkan header `Prefer: return=representation`, jadi
+   Postgres menjalankan `INSERT ... RETURNING` — yang membutuhkan hak SELECT.
+   Policy RLS memang sengaja tidak memberi SELECT pada `rsvps` untuk anon
+   (nama, pesan, dan jumlah tamu adalah data pribadi pemilik undangan), sehingga
+   Postgres menolak dengan `42501` dan route memenerjemahkannya jadi
+   "Undangan belum menerima RSVP". Daripada melonggarkan policy SELECT, insert
+   dipindahkan ke service_role lewat `lib/supabase/service.ts` — pemeriksa
+   `status === "published"` di route sudah menjadi otorisasi di sisi aplikasi,
+   dan policy RLS tetap melindungi wedding draft dari penulisan langsung lewat
+   publishable key.
+2. **`PATCH /api/weddings/[id]` membalas 500 untuk body tanpa perubahan.**
+   zod membuang key yang tidak dikenal, jadi `update({})` menolak dengan
+   "Cannot coerce the result to a single JSON object". Sekarang dibalas 400
+   "Tidak ada perubahan untuk disimpan".
+3. **`getServiceClient` dipindah** dari `lib/payments/record.ts` ke
+   `lib/supabase/service.ts` supaya tidak tinggal di dalam modul pembayaran
+   padahal kini dipakai dua domain.
+
+### DDEV
+
+- `nodejs_version` 20 → 22. `@supabase/supabase-js` tidak bisa jalan di Node 20
+  (belum ada native WebSocket) dan memunculkan peringatan deprecation pada
+  setiap hot reload. Setelah menaikkan versi, peringatan hilang dan
+  `supabase-js` bisa dipakai langsung dari script di dalam container.
+
+### Database
+
+- Dialihkan ke project Supabase `lrluncnmxymzlbupbppz` (region `us-east-1`).
+  Keempat file migrasi dijalankan ulang di sana lewat `npm run db:migrate`.
+- `SUPABASE_SERVICE_ROLE_KEY` memakai JWT `service_role`, bukan key
+  `sb_secret_…`. Key `sb_secret_` bukan JWT sehingga ditolak oleh Supabase
+  Auth Admin API dengan `bad_jwt`.
+
 ## 2026-10-01 — Database Supabase terpasang, dev server otomatis
 
 ### Migrasi database

@@ -58,6 +58,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     patch.draft_content = { ...base, ...parsed.data.draft_content };
   }
 
+  // zod membuang key yang tidak dikenal, jadi body `{}` — atau body yang
+  // seluruhnya key asing — menghasilkan patch kosong. PostgREST menolak
+  // `update({})` ("Cannot coerce the result to a single JSON object") karena
+  // tidak ada baris yang tersentuh; itu kesalahan klien, bukan kegagalan DB.
+  if (Object.keys(patch).length === 0) {
+    return NextResponse.json(
+      { error: "Tidak ada perubahan untuk disimpan" },
+      { status: 400 }
+    );
+  }
+
   const { data, error } = await supabase
     .from("weddings")
     .update(patch)
