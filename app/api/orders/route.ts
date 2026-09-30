@@ -8,6 +8,7 @@ import {
   readDuitkuConfig,
   type PaymentChannel,
 } from "@/lib/payments/duitku";
+import { attachInvoice, markOrderFailed } from "@/lib/payments/orders";
 
 /** GET /api/orders — riwayat order milik caller. */
 export async function GET() {
@@ -19,13 +20,33 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("orders")
-    .select("id, wedding_id, plan_id, amount, currency, status, provider, created_at, weddings(slug, title)")
+    .select(
+      "id, wedding_id, plan_id, amount, currency, status, provider, payment_method, payment_url, expires_at, created_at, weddings(slug, title)"
+    )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(50);
 
   if (error) return NextResponse.json({ error: "Gagal memuat order" }, { status: 500 });
-  return NextResponse.json({ data });
+
+  // `payment_url` hanya berguna kalau invoice-nya masih berlaku. Duitku tidak
+  // menghidupkan kembali invoice kedaluwarsa, jadi jangan tawarkan tombol
+  // "Lanjut bayar" yang pasti gagal — tawarkan buat invoice baru.
+  const now = Date.now();
+  const rows = (data ?? []).map((row) => {
+    const o = row as Record<string, unknown>;
+    const expires = typeof o.expires_at === "string" ? Date.parse(o.expires_at) : null;
+    const masihBerlaku = Boolean(expires !== null && expires > now);
+    return {
+      ...o,
+      payment_url: masihBerlaku ? o.payment_url : null,
+      // Invoice kedaluwarsa ATAU `paymentUrl`-nya tidak pernah tersimpan. Yang
+      // kedua terjadi pada order lama, sebelum kolom ini ada.
+      perlu_invoice_baru: o.status === "pending" && !masihBerlaku,
+    };
+  });
+
+  return NextResponse.json({ data: rows });
 }
 
 /**
@@ -137,11 +158,31 @@ export async function POST(req: Request) {
       duitku
     );
 
-    await supabase.from("orders").update({ provider_ref: inquiry.reference }).eq("id", order.id);
+    // Penulisan lewat service_role. Sebelumnya memakai client user, yang UPDATE-nya
+    // ditolak RLS tanpa error — sehingga `provider_ref` tidak pernah tersimpan dan
+    // order `pending` tidak punya `paymentUrl` untuk dilanjutkan.
+    const saved = await attachInvoice(order.id, user.id, {
+      providerRef: inquiry.reference,
+      paymentUrl: inquiry.paymentUrl,
+      paymentMethod: channel.code,
+      expiryMinutes: duitku.expiryMinutes,
+    });
+    if (!saved.ok) {
+      // Order sudah dibuat di Duitku tapi URL-nya tidak tersimpan. Jangan dihapus —
+      // bayarannya masih bisa masuk lewat webhook — tapi pembayaran yang berhasil
+      // tidak akan punya tombol "Lanjut bayar".
+      console.error("[orders] gagal menyimpan invoice:", saved.error);
+      return NextResponse.json(
+        { error: "Transaksi dibuat di Duitku, tetapi URL pembayaran gagal disimpan. Hubungi support dengan nomor order Anda." },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({ data: { order }, redirect_url: inquiry.paymentUrl }, { status: 201 });
   } catch (err) {
     // Transaksi gagal dibuat → jangan tinggalkan order pending yang menggantung.
-    await supabase.from("orders").update({ status: "failed" }).eq("id", order.id);
+    const failed = await markOrderFailed(order.id, user.id);
+    if (!failed.ok) console.error("[orders] gagal menandai failed:", failed.error);
     const message = err instanceof Error ? err.message : "Gateway tidak dapat dihubungi";
     console.error("[orders] create transaction failed:", message);
     return NextResponse.json({ error: message }, { status: 502 });

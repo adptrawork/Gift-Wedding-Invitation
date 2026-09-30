@@ -18,8 +18,22 @@ interface Order {
   amount: number;
   status: string;
   created_at: string;
+  /** Kode channel Duitku yang dipakai, mis. "BC". */
+  payment_method: string | null;
+  /** Hanya dikirim server kalau invoice masih berlaku. */
+  payment_url: string | null;
+  /** Order pending tanpa tautan bayar — harus bikin invoice baru. */
+  perlu_invoice_baru: boolean;
   weddings: { slug: string; title: string } | null;
 }
+
+/** Label status supaya tabel tidak menampilkan string mentah dari database. */
+const STATUS: Record<string, { label: string; className: string }> = {
+  paid: { label: "Lunas", className: "bg-emerald-50 text-emerald-800" },
+  pending: { label: "Menunggu bayar", className: "bg-amber-50 text-amber-800" },
+  failed: { label: "Gagal", className: "bg-red-50 text-red-700" },
+  expired: { label: "Kedaluwarsa", className: "bg-neutral-100 text-neutral-600" },
+};
 
 interface Channel {
   code: string;
@@ -34,6 +48,7 @@ export default function BillingClient() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [verifying, setVerifying] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState<string | null>(null);
   const [msg, setMsg] = useState("");
   const [channels, setChannels] = useState<Channel[]>([]);
   const [channel, setChannel] = useState("");
@@ -96,8 +111,40 @@ export default function BillingClient() {
     }
   }
 
-  async function checkout(planId: string) {
-    if (!weddingId) {
+  /**
+   * Batalkan order yang belum dibayar.
+   *
+   * Order `paid` ditolak server dengan 409 — disable di sini hanya supaya
+   * tombolnya tidak muncul, bukan sebagai penjaga.
+   */
+  async function cancel(orderId: string) {
+    setCancelling(orderId);
+    setMsg("");
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, { method: "DELETE" });
+      const json = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        setMsg(json.error ?? `Gagal membatalkan (${res.status}).`);
+        return;
+      }
+      await load();
+    } catch {
+      setMsg("Koneksi bermasalah.");
+    } finally {
+      setCancelling(null);
+    }
+  }
+
+  /**
+   * Buat invoice baru dan langsung arahkan ke halaman bayar Duitku.
+   *
+   * `weddingOverride` dipakai tombol "Buat invoice baru" di baris order:
+   * order lama bisa punya undangan sendiri, dan itu harus tetap terpilih
+   * walau select di atas menunjuk undangan lain.
+   */
+  async function checkout(planId: string, weddingOverride?: string | null) {
+    const wedding = weddingOverride ?? weddingId;
+    if (!wedding) {
       setMsg("Pilih undangan dulu.");
       return;
     }
@@ -115,7 +162,7 @@ export default function BillingClient() {
         // Kirim plan_id + kode channel saja. Harga ditentukan server dari
         // katalog, dan kode channel divalidasi ulang di server.
         body: JSON.stringify({
-          wedding_id: weddingId,
+          wedding_id: wedding,
           plan_id: planId,
           payment_method: channel,
         }),
@@ -235,6 +282,11 @@ export default function BillingClient() {
 
       <section className="mt-10">
         <h2 className="text-xl font-semibold">Riwayat order</h2>
+        <p className="mt-1 text-sm opacity-60">
+          Order menunggu bayar bisa dilanjutkan ke halaman Duitku, dicek, atau dibatalkan.
+          Order yang sudah kedaluwarsa tidak bisa dihidupkan kembali — pilih paket di atas
+          untuk membuat invoice baru.
+        </p>
         {orders.length === 0 ? (
           <p className="mt-2 text-sm opacity-60">Belum ada order.</p>
         ) : (
@@ -243,51 +295,93 @@ export default function BillingClient() {
               <tr className="border-b">
                 <th className="py-2">Tanggal</th>
                 <th>Undangan</th>
-                <th>Paket</th>
+                <th>Metode</th>
                 <th>Nominal</th>
                 <th>Status</th>
+                <th className="text-right">Aksi</th>
               </tr>
             </thead>
             <tbody>
-              {orders.map((o) => (
-                <tr key={o.id} className="border-b">
-                  <td className="py-2">{new Date(o.created_at).toLocaleDateString("id-ID")}</td>
-                  <td>
-                    {o.wedding_id ? (
-                      <a className="underline" href={`/dashboard/wedding/${o.wedding_id}/edit`}>
-                        {o.weddings?.title ?? o.weddings?.slug ?? "Lihat"}
-                      </a>
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-                  <td className="font-mono text-xs">{o.plan_id ?? "—"}</td>
-                  <td>{formatIDR(o.amount)}</td>
-                  <td>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs ${
-                        o.status === "paid"
-                          ? "bg-green-100 text-green-800"
-                          : o.status === "failed"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-neutral-100"
-                      }`}
-                    >
-                      {o.status}
-                    </span>
-                    {o.status === "pending" ? (
-                      <button
-                        type="button"
-                        onClick={() => verify(o.id)}
-                        disabled={verifying === o.id}
-                        className="ml-2 text-xs underline disabled:opacity-40"
-                      >
-                        {verifying === o.id ? "Cek…" : "Cek status"}
-                      </button>
-                    ) : null}
-                  </td>
-                </tr>
-              ))}
+              {orders.map((o) => {
+                const badge = STATUS[o.status] ?? {
+                  label: o.status,
+                  className: "bg-neutral-100 text-neutral-700",
+                };
+                return (
+                  <tr key={o.id} className="border-b align-top">
+                    <td className="py-2 whitespace-nowrap">
+                      {new Date(o.created_at).toLocaleDateString("id-ID")}
+                    </td>
+                    <td>
+                      {o.wedding_id ? (
+                        <a className="underline" href={`/dashboard/wedding/${o.wedding_id}/edit`}>
+                          {o.weddings?.title ?? o.weddings?.slug ?? "Lihat"}
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                      <span className="block font-mono text-xs opacity-50">{o.plan_id ?? "—"}</span>
+                    </td>
+                    <td className="font-mono text-xs">{o.payment_method ?? "—"}</td>
+                    <td className="whitespace-nowrap">{formatIDR(o.amount)}</td>
+                    <td>
+                      <span className={`rounded-full px-2 py-0.5 text-xs ${badge.className}`}>
+                        {badge.label}
+                      </span>
+                    </td>
+                    <td className="py-2">
+                      {o.status === "pending" ? (
+                        <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
+                          {/* Invoice masih hidup: tautan ke halaman bayar Duitku
+                              masih berlaku, jadi ini jalan paling langsung. */}
+                          {o.payment_url ? (
+                            <a
+                              href={o.payment_url}
+                              className="rounded-lg bg-neutral-900 px-3 py-1.5 text-xs text-white transition-transform active:translate-y-px"
+                            >
+                              Lanjut bayar
+                            </a>
+                          ) : null}
+                          {/* Invoice sudah mati atau order dibuat sebelum kolom
+                              payment_url ada. Duitku tidak menghidupkan kembali
+                              invoice lama, dan merchantOrderId tidak bisa
+                              dipakai ulang, jadi satu-satunya jalan adalah
+                              invoice BARU — bukan tautan yang sama. */}
+                          {!o.payment_url && o.perlu_invoice_baru ? (
+                            <button
+                              type="button"
+                              onClick={() => checkout(o.plan_id ?? "", o.wedding_id)}
+                              disabled={busy === o.plan_id || !o.plan_id}
+                              title="Buat invoice baru untuk paket ini dan buka halaman bayar Duitku"
+                              className="rounded-lg bg-neutral-900 px-3 py-1.5 text-xs text-white transition-transform active:translate-y-px disabled:opacity-40"
+                            >
+                              {busy === o.plan_id ? "Membuat…" : "Buat invoice baru"}
+                            </button>
+                          ) : null}
+                          <button
+                            type="button"
+                            onClick={() => verify(o.id)}
+                            disabled={verifying === o.id}
+                            className="text-xs underline disabled:opacity-40"
+                          >
+                            {verifying === o.id ? "Cek…" : "Cek status"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => cancel(o.id)}
+                            disabled={cancelling === o.id}
+                            className="text-xs underline opacity-60 hover:opacity-100 disabled:opacity-40"
+                          >
+                            {cancelling === o.id ? "Batal…" : "Batalkan"}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-xs opacity-40">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

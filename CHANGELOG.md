@@ -1,5 +1,75 @@
 # CHANGELOG
 
+## 2026-10-01 (lanjutan 6) — Order pending bisa dilanjutkan dan dibatalkan
+
+Order `pending` sebelumnya hanya punya satu tombol, "Cek status", sehingga begitu
+customer menutup tab tidak ada jalan lain. Tiga penyebabnya:
+
+1. **`provider_ref` tidak pernah tersimpan.** `POST /api/orders` menuliskannya
+   lewat client milik user, padahal tabel `orders` sengaja tidak punya policy
+   UPDATE untuk `authenticated`. PostgREST membalas 200 tanpa baris, jadi
+   kegagalan itu tidak terlihat di kode maupun log.
+2. **`paymentUrl` tidak pernah disimpan sama sekali.** Response inquiry Duitku
+   memuat `paymentUrl`, satu-satunya jalan kembali ke halaman bayar, dan
+   nilainya dibuang. Tanpa itu, `merchantOrderId` yang sama tidak bisa dipakai
+   untuk inquiry ulang.
+3. **Tidak ada endpoint pembatalan.** Status `expired` sudah ada di CHECK
+   constraint sejak awal tetapi tidak pernah dipakai.
+
+Pembatalan butuh handler yang hanya boleh menyentuh baris sendiri. Menambah
+policy UPDATE untuk `authenticated` akan membuka celah: customer bisa menulis
+`status = 'paid'` sendiri dan membuka paket premium tanpa membayar. Jadi
+`lib/payments/orders.ts` memakai service_role, dan setiap fungsi mewajibkan
+`ownerId` agar kepemilikan diverifikasi di kode sebelum penulisan. Order `paid`
+tidak bisa dibatalkan — filter `.eq("status", "pending")` membuat permintaan atas
+order lunas tidak mengubah apa pun dan endpoint membalas 409.
+
+Kolom baru di `orders` (migration `20260930000004_order_invoice.sql`):
+`payment_url`, `payment_method`, `expires_at`. `GET /api/orders` hanya
+menyertakan `payment_url` selama invoice belum kedaluwarsa, karena Duitku tidak
+menghidupkan kembali invoice lama — menautkan URL yang sudah mati hanya membuat
+user pasting ke halaman yang salah.
+
+Di UI tabel riwayat order dapat tombol "Lanjut bayar" (hanya kalau invoice masih
+berlaku), "Buat invoice baru", "Cek status", dan "Batalkan". Status ditampilkan
+dalam bahasa Indonesia, bukan string mentah dari database.
+
+"Buat invoice baru" muncul kalau invoice-nya sudah kedaluwarsa atau `paymentUrl`
+tidak pernah tersimpan (order lama yang dibuat sebelum kolom ini ada). Duitku
+tidak menghidupkan kembali invoice lama dan `merchantOrderId` tidak bisa dipakai
+ulang, jadi mengarahkan user ke URL yang sudah mati hanya akan culminate di halaman error — satu-satunya
+jalan adalah invoice baru lewat `POST /api/orders` dengan `merchantOrderId` baru.
+
+Nominal order demo juga diselaraskan dengan `lib/plans.ts`: seed lama memakai
+499000/199000 sementara server memakai 99000/49000, sehingga tabel riwayat
+menampilkan nominal yang bertentangan dengan kartu paket di halaman billing.
+
+Hasil uji: 15 pemeriksaan, 0 gagal — termasuk inquiry Duitku sandbox sungguhan
+yang memastikan `provider_ref`, `payment_url`, `payment_method`, dan `expires_at`
+benar-benar tersimpan di database.
+
+Hasil uji: 10 pemeriksaan, 0 gagal — termasuk 409 untuk order lunas dan
+pembatalan kedua atas order yang sama.
+
+## 2026-10-01 (lanjutan 5) — Header sesuai status sesi
+
+Tombol "Login" di `app/layout.tsx` ditulis statis, jadi tetap muncul untuk
+pengguna yang sudah masuk dan tidak ada cara keluar dari akun sama sekali.
+
+Perbaikan:
+
+- `components/site-header.tsx` — header jadi Server Component yang membaca sesi
+  dari cookie. Tamu melihat Masuk + Daftar; yang masuk melihat Dashboard,
+  Billing, alamat emailnya, dan Keluar. Link Admin hanya untuk `role = admin`,
+  jadi reviewer dan customer tidak diberi jalan ke panel admin.
+- `components/logout-button.tsx` — `signOut()` lalu `router.push("/")` +
+  `router.refresh()`. Refresh wajib, kalau tidak header masih menampilkan
+  hasil render server yang lama.
+
+Membaca cookie di layout akar tidak merusak halaman statis karena semua halaman
+yang memakainya memang sudah `force-dynamic` (`/`, `/[slug]`, `/dashboard`,
+`/admin`), jadi tidak ada build statis yang jadi sia-sia.
+
 ## 2026-10-01 (lanjutan 4) — Sinkron env ke Vercel
 
 `scripts/vercel-env-sync.sh` (`vercel:env`) mendorong `.env` ke environment

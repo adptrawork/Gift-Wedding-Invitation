@@ -62,10 +62,13 @@ fi
 echo "== koneksi via $TRANSPORT =="
 psql "$CONN" -tAc "select 'user ' || current_user || ' | server ' || current_setting('server_version');"
 
+# Urutan penting: init bikin tabel, hardening Perbaiki policy, duitku mengganti
+# constraint provider, lalu invoice menambah kolom payment_* di orders.
 FILES=(
   supabase/migrations/20260930000001_init.sql
   supabase/migrations/20260930000002_hardening.sql
   supabase/migrations/20260930000003_duitku.sql
+  supabase/migrations/20260930000004_order_invoice.sql
   supabase/seed.sql
 )
 

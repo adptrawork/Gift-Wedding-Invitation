@@ -426,10 +426,14 @@ const RSVPS = {
   "demo-modern-rizky": [{ name: "Teman Kuliah", attendance: "yes", guests_count: 2, message: "" }],
 };
 
+// Nominal WAJIB sama dengan `lib/plans.ts` (sumber kebenaran harga di server).
+// Kalau keduanya berbeda, tabel riwayat order menampilkan nominal yang
+// bertentangan dengan kartu paket di halaman billing, dan user mengira
+// ditagih lebih mahal. Kalau harga paket berubah, ubah kedua tempatnya.
 const ORDERS = [
-  { slug: "demo-andi-sinta", owner: "andi@demo.test", planId: "premium", amount: 499000, status: "paid" },
-  { slug: "demo-dewi-rizky", owner: "sinta@demo.test", planId: "basic", amount: 199000, status: "pending" },
-  { slug: "demo-modern-rizky", owner: "bunga@demo.test", planId: "basic", amount: 199000, status: "failed" },
+  { slug: "demo-andi-sinta", owner: "andi@demo.test", planId: "premium", amount: 99_000, status: "paid" },
+  { slug: "demo-dewi-rizky", owner: "sinta@demo.test", planId: "basic", amount: 49_000, status: "pending" },
+  { slug: "demo-modern-rizky", owner: "bunga@demo.test", planId: "basic", amount: 49_000, status: "failed" },
 ];
 
 /* ---------------------------------------------------------------------- main */
