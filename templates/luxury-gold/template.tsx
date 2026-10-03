@@ -56,8 +56,8 @@ export default function LuxuryGoldTemplate({ data }: { data: LuxuryData }) {
       style={
         {
           "--template-primary": theme.primary ?? "#C9A227",
-          "--template-background": theme.background ?? "#FAF7F0",
-          "--template-text": theme.text ?? "#222222",
+          "--template-background": theme.background ?? "#FDF2F8",
+          "--template-text": theme.text ?? "#831843",
           background: "var(--template-background)",
           color: "var(--template-text)",
           fontFamily: theme.fontBody ?? "Inter, sans-serif",
@@ -76,7 +76,7 @@ export default function LuxuryGoldTemplate({ data }: { data: LuxuryData }) {
       <Countdown date={data.event.date} />
       <EventInfo {...data.event} />
       {data.story.title ? (
-        <GradientText className="block text-3xl font-semibold text-center mt-8 mb-4" from="#C9A227" to="#8B6914">
+        <GradientText className="block text-3xl font-semibold text-center mt-8 mb-4" from="#DB2777" to="#A16207">
           {data.story.title}
         </GradientText>
       ) : null}

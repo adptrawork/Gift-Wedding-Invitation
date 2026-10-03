@@ -40,7 +40,7 @@ export default function ModernMinimalTemplate({ data }: { data: WeddingData }) {
   const theme = data.theme ?? {};
   return (
     <main
-      style={{ background: theme.background ?? "#FFFFFF", color: theme.text ?? "#111", fontFamily: theme.fontBody ?? "Inter, sans-serif" } as React.CSSProperties}
+      style={{ background: theme.background ?? "#FDF2F8", color: theme.text ?? "#831843", fontFamily: theme.fontBody ?? "Inter, sans-serif" } as React.CSSProperties}
     >
       <Hero title={`${data.groom.name} & ${data.bride.name}`} image={data.hero.photo} subtitle={data.hero.subtitle} />
       <Marquee className="py-2 text-sm opacity-40" repeat={3}>
@@ -50,7 +50,7 @@ export default function ModernMinimalTemplate({ data }: { data: WeddingData }) {
       <Countdown date={data.event.date} />
       <EventInfo {...data.event} />
       {data.story.title ? (
-        <GradientText className="block text-3xl font-semibold text-center mt-8 mb-4" from="#111111" to="#555555">
+        <GradientText className="block text-3xl font-semibold text-center mt-8 mb-4" from="#DB2777" to="#A16207">
           {data.story.title}
         </GradientText>
       ) : null}

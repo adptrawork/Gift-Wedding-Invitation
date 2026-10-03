@@ -46,7 +46,7 @@ function make(accent: string, bg: string, label: string) {
     const theme = data.theme ?? {};
     return (
       <main
-        style={{ background: theme.background ?? bg, color: theme.text ?? "#222", fontFamily: theme.fontBody ?? "Inter, sans-serif" } as React.CSSProperties}
+        style={{ background: theme.background ?? bg, color: theme.text ?? "#831843", fontFamily: theme.fontBody ?? "Inter, sans-serif" } as React.CSSProperties}
       >
         <Hero title={`${data.groom.name} & ${data.bride.name}`} image={data.hero.photo} subtitle={data.hero.subtitle} />
         <Marquee className="py-2 text-sm opacity-50" repeat={3}>
@@ -56,7 +56,7 @@ function make(accent: string, bg: string, label: string) {
         <Countdown date={data.event.date} />
         <EventInfo {...data.event} />
         {data.story.title ? (
-          <GradientText className="block text-3xl font-semibold text-center mt-8 mb-4" from="#2F7D4F" to="#D4A853">
+          <GradientText className="block text-3xl font-semibold text-center mt-8 mb-4" from="#DB2777" to="#A16207">
             {data.story.title}
           </GradientText>
         ) : null}
@@ -70,5 +70,5 @@ function make(accent: string, bg: string, label: string) {
   };
 }
 
-const RomanticGardenTemplate = make("#2F7D4F", "#F4FBF4", "Romantic Garden");
+const RomanticGardenTemplate = make("#DB2777", "#FDF2F8", "Romantic Garden");
 export default RomanticGardenTemplate;

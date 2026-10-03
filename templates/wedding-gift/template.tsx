@@ -25,7 +25,7 @@ export default function WeddingGiftTemplate({ data }: { data: GiftData }) {
   const theme = data.theme ?? {};
   return (
     <main
-      style={{ background: theme.background ?? "#FFF9F7", color: theme.text ?? "#333", fontFamily: theme.fontBody ?? "Inter, sans-serif" } as React.CSSProperties}
+      style={{ background: theme.background ?? "#FDF2F8", color: theme.text ?? "#831843", fontFamily: theme.fontBody ?? "Inter, sans-serif" } as React.CSSProperties}
     >
       <Hero title={data.cover.title ?? "Kado Spesial Untukmu"} image={data.cover.photo} subtitle={`Untuk ${data.recipient.name}`} />
       {data.recipient.photo && (
@@ -34,7 +34,7 @@ export default function WeddingGiftTemplate({ data }: { data: GiftData }) {
         </Marquee>
       )}
       <Section title={data.message.title ?? "Pesan"}>
-        <GradientText className="block text-2xl font-semibold mb-2" from="#d4a574" to="#8b6f47">
+        <GradientText className="block text-2xl font-semibold mb-2" from="#DB2777" to="#A16207">
           {data.message.title ?? "Untukmu"}
         </GradientText>
         <p className="whitespace-pre-line opacity-80">{data.message.content}</p>
