@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Hero, Couple, EventInfo, Story, Gallery, Countdown, MusicToggle, RSVP, Footer } from "@/components/template-sdk";
+import { Marquee } from "@/components/ui/marquee";
+import { GradientText } from "@/components/ui/gradient-text";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -47,10 +49,18 @@ function make(accent: string, bg: string, label: string) {
         style={{ background: theme.background ?? bg, color: theme.text ?? "#222", fontFamily: theme.fontBody ?? "Inter, sans-serif" } as React.CSSProperties}
       >
         <Hero title={`${data.groom.name} & ${data.bride.name}`} image={data.hero.photo} subtitle={data.hero.subtitle} />
+        <Marquee className="py-2 text-sm opacity-50" repeat={3}>
+          <span className="mx-4">✿ ${data.groom.name} & ${data.bride.name} ✿ ${label} ✿</span>
+        </Marquee>
         <Couple groom={data.groom.name} bride={data.bride.name} />
         <Countdown date={data.event.date} />
         <EventInfo {...data.event} />
-        {data.story.title ? <Story title={data.story.title} content={data.story.content ?? ""} /> : null}
+        {data.story.title ? (
+          <GradientText className="block text-3xl font-semibold text-center mt-8 mb-4" from="#2F7D4F" to="#D4A853">
+            {data.story.title}
+          </GradientText>
+        ) : null}
+        {data.story.title ? <Story title="" content={data.story.content ?? ""} /> : null}
         <Gallery photos={data.gallery} />
         {data.weddingId ? <RSVP weddingId={data.weddingId} /> : null}
         <MusicToggle src={data.music} />

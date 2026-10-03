@@ -15,6 +15,8 @@ import {
   RSVP,
   Footer,
 } from "@/components/template-sdk";
+import { Marquee } from "@/components/ui/marquee";
+import { GradientText } from "@/components/ui/gradient-text";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -67,10 +69,18 @@ export default function LuxuryGoldTemplate({ data }: { data: LuxuryData }) {
         image={data.hero.photo}
         subtitle={data.hero.subtitle}
       />
+      <Marquee className="py-2 text-sm opacity-60" repeat={3}>
+        <span className="mx-4">❈ The Wedding of ❈ ${data.groom.name} & ${data.bride.name} ❈ Luxury Gold ❈</span>
+      </Marquee>
       <Couple groom={data.groom.name} bride={data.bride.name} />
       <Countdown date={data.event.date} />
       <EventInfo {...data.event} />
-      {data.story.title ? <Story title={data.story.title} content={data.story.content ?? ""} /> : null}
+      {data.story.title ? (
+        <GradientText className="block text-3xl font-semibold text-center mt-8 mb-4" from="#C9A227" to="#8B6914">
+          {data.story.title}
+        </GradientText>
+      ) : null}
+      {data.story.title ? <Story title="" content={data.story.content ?? ""} /> : null}
       <Gallery photos={data.gallery} />
       {data.weddingId ? <RSVP weddingId={data.weddingId} /> : null}
       <MusicToggle src={data.music} />
