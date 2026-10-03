@@ -15,12 +15,21 @@ export function Marquee({
   reverse = false,
   pauseOnHover = false,
 }: MarqueeProps) {
+  const dir = reverse ? "marquee-reverse" : "marquee";
   return (
     <div className={`overflow-hidden ${className}`}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        @keyframes marquee-reverse { 0% { transform: translateX(-50%); } 100% { transform: translateX(0); } }
+      `}} />
       <div
-        className={`flex w-max ${reverse ? "animate-marquee-reverse" : "animate-marquee"} ${
-          pauseOnHover ? "hover:[animation-play-state:paused]" : ""
-        }`}
+        className="flex w-max"
+        style={{
+          animation: `${dir} ${className ? (className.includes("slow") ? "30s" : "20s") : "20s"} linear infinite`,
+          animationPlayState: pauseOnHover ? "paused" : "running",
+        }}
+        onMouseEnter={(e) => { if (pauseOnHover) (e.currentTarget as HTMLElement).style.animationPlayState = "paused"; }}
+        onMouseLeave={(e) => { if (pauseOnHover) (e.currentTarget as HTMLElement).style.animationPlayState = "running"; }}
       >
         {Array.from({ length: repeat }).map((_, i) => (
           <div key={i} className="flex-shrink-0">
